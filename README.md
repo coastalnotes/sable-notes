@@ -2,6 +2,8 @@
 
 Bear-style, local-first Markdown notes as a cross-browser extension. Obsidian-compatible: `#tags`, `[[wiki-links]]`, raw `.md` export.
 
+Status, decisions, and the remaining manual checklist: **[NOTES.md](NOTES.md)**.
+
 ## Stack
 
 - Manifest V3 (Chrome) + WebExtensions MV3 (Firefox) from one codebase
