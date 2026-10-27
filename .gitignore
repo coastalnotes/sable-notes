@@ -1,0 +1,8 @@
+node_modules/
+dist/
+dist-chrome/
+dist-firefox/
+coverage/
+*.local
+*.log
+.DS_Store

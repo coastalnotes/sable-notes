@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bear Notes side panel</title>
+  </head>
+  <body>
+    <div class="mini">
+      <div class="row">
+        <strong>🐻 Bear Notes</strong>
+        <span class="spacer"></span>
+        <button type="button" class="linklike" id="open-full">Full app →</button>
+      </div>
+      <textarea id="capture" aria-label="Note body" placeholder="Quick capture… (Ctrl/Cmd+Enter to save)"></textarea>
+      <div class="row">
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn primary" id="save">Save</button>
+      </div>
+      <hr style="border:0;border-top:1px solid var(--border);width:100%" />
+      <strong style="font-size:12px;color:var(--muted)">RECENT NOTES</strong>
+      <div class="recent" id="recent"></div>
+    </div>
+    <script type="module" src="./sidepanel.ts"></script>
+  </body>
+</html>

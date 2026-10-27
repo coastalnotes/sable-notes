@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Quick capture</title>
+    <style>body{margin:0;min-width:340px;max-width:420px;}</style>
+  </head>
+  <body>
+    <div class="mini">
+      <div class="row">
+        <strong>🐻 Quick capture</strong>
+        <span class="spacer"></span>
+        <button type="button" class="linklike" id="open-full">Open full app →</button>
+      </div>
+      <textarea id="capture" aria-label="Note body" placeholder="Write something… tags like #idea work here too"></textarea>
+      <div class="row">
+        <button type="button" class="btn" id="clear">Clear</button>
+        <span class="spacer"></span>
+        <span class="status" id="status" role="status" aria-live="polite"></span>
+        <button type="button" class="btn primary" id="save">Save note</button>
+      </div>
+    </div>
+    <script type="module" src="./popup.ts"></script>
+  </body>
+</html>

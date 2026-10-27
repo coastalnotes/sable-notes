@@ -1,0 +1,87 @@
+/* Bear-style hidden-markdown CSS.
+ * CodeMirror marks raw syntax with .cm-formatting* spans.
+ * We collapse them to zero-width (keeping layout stable) unless the
+ * cursor is on that line (.cm-activeLineHide), or the span is selected.
+ */
+
+.cm-content .cm-formatting {
+  opacity: 0;
+  font-size: 0;
+  letter-spacing: 0;
+  transition: opacity 120ms ease;
+}
+
+.cm-content .cm-activeLineHide .cm-formatting {
+  opacity: 0.45;
+  font-size: inherit;
+}
+
+/* Headings render large even with marks hidden */
+.cm-content .cm-header {
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--fg);
+}
+.cm-content .cm-header-1 {
+  font-size: 1.9em;
+  letter-spacing: -0.02em;
+}
+.cm-content .cm-header-2 {
+  font-size: 1.55em;
+  letter-spacing: -0.01em;
+}
+.cm-content .cm-header-3 {
+  font-size: 1.3em;
+}
+.cm-content .cm-header-4 {
+  font-size: 1.1em;
+}
+
+/* Bold/italic/quote/code/link polish */
+.cm-content .cm-strong {
+  font-weight: 700;
+}
+.cm-content .cm-em {
+  font-style: italic;
+}
+.cm-content .cm-quote {
+  color: var(--muted);
+  font-style: italic;
+}
+.cm-content .cm-link {
+  color: var(--accent);
+  text-decoration: none;
+}
+.cm-content .cm-url {
+  color: var(--muted);
+}
+.cm-content .cm-monospace,
+.cm-content .cm-inlinecode {
+  font-family: var(--mono-stack);
+  font-size: 0.88em;
+  background: var(--code-bg);
+  border-radius: 6px;
+  padding: 1px 5px;
+}
+
+/* Wiki-links [[…]] */
+.cm-content .cm-wikilink {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-radius: 6px;
+  padding: 0 3px;
+  cursor: pointer;
+  text-decoration: none;
+}
+.cm-content .cm-activeLineHide .cm-wikilink {
+  background: transparent;
+  padding: 0;
+}
+.cm-content .cm-wikilink:hover {
+  text-decoration: underline;
+}
+
+/* Placeholder for empty doc */
+.cm-content .cm-placeholder {
+  color: var(--muted);
+}

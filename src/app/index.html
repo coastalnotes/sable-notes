@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bear Markdown Notes</title>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <aside class="sidebar" aria-label="Tags">
+        <div class="brand"><span class="dot">🐻</span><span>Bear Notes</span></div>
+        <div style="padding:0 12px 6px;display:flex;gap:8px;">
+          <button type="button" class="btn primary" id="btn-new" style="flex:1">+ New note</button>
+        </div>
+        <div class="tag-list" id="tag-list"></div>
+        <div class="sidebar-footer">
+          <button type="button" class="btn icon" id="btn-theme" title="Toggle theme" aria-label="Cycle light, dark, system theme">◐</button>
+          <button type="button" class="btn icon" id="btn-export-all" title="Export backup JSON" aria-label="Export all notes as JSON backup">⤓</button>
+          <button type="button" class="btn icon" id="btn-import" title="Import .md / JSON" aria-label="Import Markdown or JSON files">⤒</button>
+          <input type="file" id="file-import" accept=".md,.markdown,.json" multiple hidden />
+        </div>
+      </aside>
+      <section class="notes-pane" aria-label="Notes">
+        <div class="toolbar">
+          <input
+            class="search"
+            id="search"
+            type="search"
+            placeholder="Search notes…"
+            aria-label="Search notes"
+            autocomplete="off"
+          />
+        </div>
+        <div class="notes-list" id="notes-list"></div>
+      </section>
+      <main class="editor-pane" aria-label="Editor">
+        <div class="editor-topbar">
+          <button type="button" class="btn icon" id="btn-back" title="Back to list" aria-label="Back to note list" style="display:none">←</button>
+          <input class="title-input" id="note-title" placeholder="Untitled" aria-label="Note title" autocomplete="off" />
+          <span class="status" id="save-status" role="status" aria-live="polite">Saved</span>
+          <button type="button" class="btn" id="btn-export-md" title="Export this note as .md">Export .md</button>
+          <button type="button" class="btn danger" id="btn-delete" title="Delete note">Delete</button>
+        </div>
+        <div class="editor-host" id="editor-host"></div>
+      </main>
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

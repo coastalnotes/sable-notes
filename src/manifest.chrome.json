@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Bear Markdown Notes",
+  "version": "0.1.0",
+  "description": "Bear-style local-first Markdown notes with Obsidian-compatible [[wiki-links]] and #tags.",
+  "minimum_chrome_version": "116",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Quick capture note",
+    "default_popup": "popup/popup.html"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "commands": {
+    "quick-capture": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+M",
+        "mac": "Command+Shift+M"
+      },
+      "description": "Quick-capture a note"
+    },
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
+      },
+      "description": "Open quick capture popup"
+    }
+  },
+  "permissions": ["storage", "sidePanel", "contextMenus", "alarms"],
+  "host_permissions": []
+}
