@@ -14,7 +14,7 @@ class NotesDB extends Dexie {
   notes!: Table<Note, string>;
 
   constructor() {
-    super("BearNotesDB");
+    super("SableNotesDB");
     this.version(1).stores({
       // Indexed fields: updatedAt for sort, title for search prefix.
       notes: "id, title, updatedAt, createdAt",
@@ -24,25 +24,28 @@ class NotesDB extends Dexie {
 
 export const db = new NotesDB();
 
-export const SETTINGS_KEY = "bear-settings-v1";
+export const SETTINGS_KEY = "sable-settings-v1";
+export const LEGACY_SETTINGS_KEY = "bear-settings-v1";
 
 const defaultSettings: AppSettings = {
   theme: "system",
   selectedTag: null,
+  autoSyncFolder: true,
+  showNoteMapInHeader: true,
 };
 
 export async function getSettings(): Promise<AppSettings> {
   // Settings live in extension storage (shared across app/popup/side panel)
   // with a localStorage mirror for the vite dev server.
   try {
-    const fromExtension = await storageGet<AppSettings>([SETTINGS_KEY]);
-    const value = fromExtension[SETTINGS_KEY];
+    const fromExtension = await storageGet<AppSettings>([SETTINGS_KEY, LEGACY_SETTINGS_KEY]);
+    const value = fromExtension[SETTINGS_KEY] ?? fromExtension[LEGACY_SETTINGS_KEY];
     if (value) return { ...defaultSettings, ...value };
   } catch {
     /* ignore */
   }
   try {
-    const rawLocal = localStorage.getItem(SETTINGS_KEY);
+    const rawLocal = localStorage.getItem(SETTINGS_KEY) ?? localStorage.getItem(LEGACY_SETTINGS_KEY);
     if (rawLocal) return { ...defaultSettings, ...JSON.parse(rawLocal) };
   } catch {
     /* ignore */
@@ -54,7 +57,7 @@ export async function saveSettings(patch: Partial<AppSettings>): Promise<AppSett
   const current = await getSettings();
   const next = { ...current, ...patch };
   try {
-    await storageSet({ [SETTINGS_KEY]: next });
+    await storageSet({ [SETTINGS_KEY]: next, [LEGACY_SETTINGS_KEY]: next });
   } catch {
     /* ignore — e.g. page opened outside an extension context */
   }
@@ -150,35 +153,50 @@ export async function resolveWikiTitle(title: string): Promise<Note | undefined>
   return all.find((n) => n.title.trim().toLowerCase() === t);
 }
 
-/** Seed a welcome note on first run so the UI is never empty. */
+/** Seed a welcome note on first run so the UI is never empty (with legacy migration). */
 export async function ensureSeed(): Promise<void> {
   const count = await db.notes.count();
   if (count > 0) return;
+
+  // Check if legacy BearNotesDB exists and migrate notes
+  try {
+    const legacyExists = await Dexie.exists("BearNotesDB");
+    if (legacyExists) {
+      const legacyDb = new Dexie("BearNotesDB");
+      legacyDb.version(1).stores({ notes: "id, title, updatedAt, createdAt" });
+      const legacyNotes = await legacyDb.table<Note, string>("notes").toArray();
+      if (legacyNotes.length > 0) {
+        await db.notes.bulkPut(legacyNotes);
+        return;
+      }
+    }
+  } catch {
+    /* ignore migration error, proceed to seed */
+  }
+
   const body = [
-    "# Welcome to Bear Markdown Notes 🐻",
+    "# Welcome to Sable Notes 🐾",
     "",
-    "This is a **local-first** Markdown editor. Your notes never leave this browser unless you export them.",
+    "This is a **local-first** Markdown editor. Your notes stay right inside this browser, with optional local directory sync for Obsidian vaults.",
     "",
     "## Try it",
     "",
-    "- Tags work like `#getting-started` or nested `#project/alpha`. Watch the sidebar update.",
-    "- Link notes with [[Second note]] — Ctrl/Cmd-click (or click the link popup) to jump.",
-    "- Everything is stored in IndexedDB. Use the ⤓/⤒ buttons to export `.md` files or a JSON backup.",
-    "",
-    "## Formatting",
-    "",
-    "Type `**bold**`, `*italic*`, `# heading`, `- list`, `` `code` `` — syntax hides when the cursor leaves the line, Bear-style.",
+    "- **Format easily**: Use the formatting toolbar above or type Markdown (`**bold**`, `*italic*`, `# heading`).",
+    "- **Tags**: Organize with `#getting-started` or nested `#project/alpha`. Watch the sidebar update.",
+    "- **Wiki-links**: Connect notes with [[Second note]] — click to jump.",
+    "- **Note Map**: Open the Note Map in Settings ⚙ to explore your connected graph.",
+    "- **Local folder sync**: Connect any folder on your computer in Settings ⚙ (Obsidian-compatible).",
     "",
     "#getting-started",
     "",
   ].join("\n");
-  const first = await createNote("Welcome to Bear Markdown Notes", body);
+  const first = await createNote("Welcome to Sable Notes", body);
   await createNote(
     "Second note",
     [
       "# Second note",
       "",
-      "This note is linked from [[Welcome to Bear Markdown Notes]].",
+      "This note is linked from [[Welcome to Sable Notes]].",
       "",
       "#getting-started",
     ].join("\n"),

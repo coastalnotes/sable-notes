@@ -10,7 +10,7 @@ import { storageGet, storageSet } from "./lib/extension";
 const ext = ((globalThis as unknown as { browser?: typeof chrome }).browser ?? chrome) as typeof chrome;
 
 const APP_PAGE = "app/index.html";
-const APP_TAB_KEY = "bear-app-tab-id";
+const APP_TAB_KEY = "sable-app-tab-id";
 
 function appUrl(): string {
   return ext.runtime.getURL(APP_PAGE);
@@ -108,25 +108,28 @@ function createMenu(props: unknown): void {
 ext.runtime.onInstalled.addListener(() => {
   createMenu({
     id: "quick-capture-selection",
-    title: "Capture selection to Bear Notes",
+    title: "Capture selection to Sable Notes",
     contexts: ["selection"],
   });
   createMenu({
-    id: "open-bear-notes",
-    title: "Open Bear Notes",
+    id: "open-sable-notes",
+    title: "Open Sable Notes",
     contexts: ["action"],
   });
 });
 
 ext.contextMenus.onClicked.addListener(async (info) => {
-  if (info.menuItemId === "open-bear-notes") {
+  if (info.menuItemId === "open-sable-notes" || info.menuItemId === "open-bear-notes") {
     await openFullApp();
     return;
   }
   if (info.menuItemId === "quick-capture-selection") {
     // Persist pending capture; popup/side panel/full app picks it up on load.
     const text = info.selectionText ?? "";
-    await storageSet({ "bear-pending-capture": { text, createdAt: Date.now() } });
+    await storageSet({
+      "sable-pending-capture": { text, createdAt: Date.now() },
+      "bear-pending-capture": { text, createdAt: Date.now() },
+    });
     const [tab] = await ext.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
     await openSidePanel(tab?.windowId);
   }

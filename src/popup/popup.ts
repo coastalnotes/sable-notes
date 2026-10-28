@@ -4,18 +4,22 @@ import { extractTitle } from "../lib/markdown";
 import { createNote, getSettings } from "../lib/storage";
 import { applyTheme } from "../lib/theme";
 
-const PENDING_KEY = "bear-pending-capture";
+const PENDING_KEYS = ["sable-pending-capture", "bear-pending-capture"];
 const box = document.getElementById("capture") as HTMLTextAreaElement;
 const status = document.getElementById("status") as HTMLElement;
+
+type PendingCapture = { text?: string };
 
 async function consumePendingCapture(): Promise<void> {
   // Read + clear pending capture (set by the context menu in the background worker).
   try {
-    const got = await storageGet<{ text?: string }>([PENDING_KEY]);
-    const text = got[PENDING_KEY]?.text;
-    if (text) {
-      box.value = box.value ? `${box.value}\n\n${text}` : text;
-      await storageRemove([PENDING_KEY]);
+    const got = await storageGet<PendingCapture>(PENDING_KEYS);
+    for (const key of PENDING_KEYS) {
+      const text = got[key]?.text;
+      if (text) {
+        box.value = box.value ? `${box.value}\n\n${text}` : text;
+        await storageRemove([key]);
+      }
     }
   } catch {
     /* ignore */

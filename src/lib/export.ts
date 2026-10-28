@@ -20,9 +20,13 @@ function frontMatter(note: Note): string {
   return `---\ntitle: "${note.title.replace(/"/g, "'")}"\ncreated: ${iso(note.createdAt)}\nupdated: ${iso(note.updatedAt)}\ntags: [${tags}]\n---\n\n`;
 }
 
+export function formatNoteMarkdown(note: Note): string {
+  return `${frontMatter(note)}${note.body.replace(/\s+$/, "")}\n`;
+}
+
 /** Export a single note as Obsidian-friendly `.md` (YAML front matter + raw body). */
 export function exportNoteMarkdown(note: Note): void {
-  const md = `${frontMatter(note)}${note.body.replace(/\s+$/, "")}\n`;
+  const md = formatNoteMarkdown(note);
   download(new Blob([md], { type: "text/markdown" }), `${slugifyTitle(note.title)}.md`);
 }
 
@@ -46,7 +50,7 @@ export function parseImportedMarkdown(filename: string, text: string): { title: 
 /** Bulk JSON backup: { version, exportedAt, notes }. */
 export function exportBackupJson(notes: Note[]): void {
   const payload = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), notes }, null, 2);
-  download(new Blob([payload], { type: "application/json" }), `bear-notes-backup-${yyyymmdd()}.json`);
+  download(new Blob([payload], { type: "application/json" }), `sable-notes-backup-${yyyymmdd()}.json`);
 }
 
 export function parseBackupJson(text: string): Note[] {

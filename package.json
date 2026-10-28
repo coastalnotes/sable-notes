@@ -1,7 +1,7 @@
 {
-  "name": "bear-markdown-notes",
+  "name": "sable-markdown-notes",
   "version": "0.1.0",
-  "description": "Bear-style Markdown note-taking extension for Chrome & Firefox. Local-first, Obsidian-compatible.",
+  "description": "Sable Notes: Sleek, local-first Markdown notes for Chrome & Firefox with Obsidian-compatible [[wiki-links]], #tags, and folder sync.",
   "type": "module",
   "license": "MIT",
   "scripts": {
@@ -12,6 +12,7 @@
     "build:chrome": "npm run build && node scripts/copy-manifest.mjs chrome",
     "build:firefox": "npm run build && node scripts/copy-manifest.mjs firefox",
     "build:all": "npm run build && node scripts/copy-manifest.mjs chrome && node scripts/copy-manifest.mjs firefox && node scripts/verify-build.mjs",
+    "package:zip": "node scripts/package-zip.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src scripts vite.config.ts",

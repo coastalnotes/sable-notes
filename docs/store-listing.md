@@ -5,15 +5,15 @@ Draft copy and reviewer notes for the Chrome Web Store and Firefox Add-ons
 
 ## Basics
 
-- **Name:** Bear Markdown Notes
-- **Short description (132 chars max):** Local-first Markdown notes with Bear-style hidden markup, `#nested/tags`, `[[wiki-links]]`, and one-click export. No account, no cloud.
+- **Name:** Sable Notes
+- **Short description (132 chars max):** Sleek, local-first Markdown notes with hidden markup, `#nested/tags`, `[[wiki-links]]`, folder sync, and note map. No cloud.
 - **Category:** Productivity
 - **Language:** English
 - **Version:** 0.1.0
 
 ## Long description
 
-> Bear Markdown Notes is a fast, local-first Markdown notebook for Chrome and
+> Sable Notes is a fast, local-first Markdown notebook for Chrome and
 > Firefox.
 >
 > **Write the way you think.** Markdown syntax fades out of the way as soon as
@@ -24,13 +24,19 @@ Draft copy and reviewer notes for the Chrome Web Store and Firefox Add-ons
 > sidebar, and connect notes with `[[Wiki Links]]` that autocomplete and open
 > in one click.
 >
+> **Save notes wherever you want.** Connect any folder on your device or your
+> Obsidian vault with local directory sync.
+>
+> **Interactive Note Map.** Explore your connected web of thoughts with a
+> responsive graph view.
+>
 > **Capture from anywhere.** Quick-capture text from the toolbar popup, the
 > side panel, or the selection context menu.
 >
 > **Your data stays yours.** Notes live in your browser's IndexedDB. There are
 > no accounts, no sync servers, no analytics, and no network requests. Export a
 > single note as Obsidian-compatible Markdown with YAML front matter, or export
-> a complete JSON backup at any time.
+> a complete JSON / ZIP backup at any time.
 >
 > **At home in light or dark.** Follows your system theme by default.
 
@@ -40,7 +46,7 @@ Draft copy and reviewer notes for the Chrome Web Store and Firefox Add-ons
 | --- | --- |
 | `storage` | Save preferences (theme, last note, selected tag) and the short-lived pending capture from the context menu. |
 | `sidePanel` | Open quick capture in Chrome's side panel. |
-| `contextMenus` | Add "Capture selection to Bear Notes" and "Open Bear Notes" to the right-click menu. |
+| `contextMenus` | Add "Capture selection to Sable Notes" and "Open Sable Notes" to the right-click menu. |
 | `alarms` | Reserved for scheduled housekeeping; no background network activity. |
 
 `host_permissions` is intentionally empty. The extension requests no access to

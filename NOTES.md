@@ -1,31 +1,28 @@
 # Project notes / handoff
 
 Last updated: **2026-10-27**
-Current commit: `82e21ef` — *Bear Markdown Notes v0.1.0: packaging, tests, CI, and cross-surface fixes*
+Current project: **Sable Notes v0.1.0**
 Version: `0.1.0` · License: MIT · Not yet published to any store.
-
-Use this file to resume work. The short version: **the code, tests, builds,
-and packages are in good shape; the remaining work is browser-level QA, store
-assets, and publishing.**
 
 ---
 
 ## 1. What this project is
 
-A Bear-style, local-first Markdown notes extension for **Chrome (MV3)** and
+A sleek, local-first Markdown notes extension for **Chrome (MV3)** and
 **Firefox (MV3)** built from one codebase. Three surfaces share one IndexedDB
 database:
 
 | Surface | Entry | Purpose |
 | --- | --- | --- |
-| Full app | `src/app/` | Three-pane notes app (tags · list · editor) |
+| Full app | `src/app/` | Three-pane notes app (tags · list · editor) + Note Map + Settings |
 | Popup | `src/popup/` | Quick capture from the toolbar |
 | Side panel / sidebar | `src/sidepanel/` | Quick capture + recent notes |
 | Background worker | `src/background.ts` | Commands, context menus, tab reuse, side panel |
 
-Notes are stored in IndexedDB (`BearNotesDB`) via Dexie. Preferences are in
-extension storage under `bear-settings-v1` (with a `localStorage` mirror used
-only by the Vite dev server). No network requests, no host permissions.
+Notes are stored in IndexedDB (`SableNotesDB` with auto-migration from `BearNotesDB`) via Dexie.
+Preferences are in extension storage under `sable-settings-v1`. Optional local directory sync
+uses the File System Access API (Chromium) to save `.md` notes directly into any folder or
+Obsidian vault. All notes can also be exported as a standard Vault `.zip` on any browser.
 
 ---
 
@@ -35,12 +32,12 @@ only by the Vite dev server). No network requests, no host permissions.
 
 - [x] `npm run typecheck` — clean
 - [x] `npm run lint` (Biome) — clean
-- [x] `npm test` — 20/20 tests passing
+- [x] `npm test` — 25/25 tests passing
 - [x] `npm run build:all` — builds both packages and passes `verify-build.mjs`
-- [x] `npm audit` — 0 vulnerabilities
-- [x] Dev-server smoke test: seed notes, tag sidebar, note list, lazy editor
-      mount, hash deep link, cross-tab live updates
-- [x] Git repository initialized, one commit, working tree clean
+- [x] `npm run package:zip` — generates `sable-notes-chrome.zip` & `sable-notes-firefox.zip`
+- [x] Formatting taskbar (H1, H2, H3, Bold, Italic, Strikethrough, Code, Task, Bullet, Number, Quote, Wiki-link, Link)
+- [x] Settings modal (Local Folder Sync + Vault ZIP export + Note Map options + Themes)
+- [x] Interactive Note Map (Graph view with physics simulation, zoom/pan, search filter, click-to-open)
 
 ### Not verified (needs a real extension install)
 
@@ -66,6 +63,7 @@ npm run typecheck
 npm run lint
 npm test
 npm run build:all      # clean packages for both browsers + verification
+npm run package:zip    # create bear-notes-chrome.zip & bear-notes-firefox.zip
 ```
 
 Dev server URLs:
@@ -193,8 +191,7 @@ Biome 2.6.3, TypeScript 5.6.
 - MIT copyright line says “Bear Markdown Notes contributors”; change if you
   want your name.
 - No git remote is configured, so CI has not run yet.
-- Packaging produces directories, not zips. Store upload needs zips (`cd
-  dist-chrome && zip -r ../bear-notes-chrome.zip .`, same for Firefox).
+- Packaging produces directories and zips (`npm run package:zip` creates `bear-notes-chrome.zip` and `bear-notes-firefox.zip`).
 
 ---
 

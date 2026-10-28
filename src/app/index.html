@@ -3,17 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bear Markdown Notes</title>
+    <title>Sable Notes</title>
   </head>
   <body>
     <div class="app" id="app">
       <aside class="sidebar" aria-label="Tags">
-        <div class="brand"><span class="dot">🐻</span><span>Bear Notes</span></div>
+        <div class="brand"><span class="dot">🐾</span><span>Sable Notes</span></div>
         <div style="padding:0 12px 6px;display:flex;gap:8px;">
           <button type="button" class="btn primary" id="btn-new" style="flex:1">+ New note</button>
         </div>
         <div class="tag-list" id="tag-list"></div>
         <div class="sidebar-footer">
+          <button type="button" class="btn icon" id="btn-settings" title="Settings & Vault" aria-label="Open Settings">⚙</button>
+          <button type="button" class="btn icon" id="btn-map" title="Note Map (Graph View)" aria-label="Open Note Map">🕸️</button>
           <button type="button" class="btn icon" id="btn-theme" title="Toggle theme" aria-label="Cycle light, dark, system theme">◐</button>
           <button type="button" class="btn icon" id="btn-export-all" title="Export backup JSON" aria-label="Export all notes as JSON backup">⤓</button>
           <button type="button" class="btn icon" id="btn-import" title="Import .md / JSON" aria-label="Import Markdown or JSON files">⤒</button>
@@ -41,9 +43,103 @@
           <button type="button" class="btn" id="btn-export-md" title="Export this note as .md">Export .md</button>
           <button type="button" class="btn danger" id="btn-delete" title="Delete note">Delete</button>
         </div>
+        <div class="editor-toolbar" id="editor-toolbar" role="toolbar" aria-label="Formatting toolbar">
+          <button type="button" class="fmt-btn" data-fmt="h1" title="Heading 1 (H1)">H1</button>
+          <button type="button" class="fmt-btn" data-fmt="h2" title="Heading 2 (H2)">H2</button>
+          <button type="button" class="fmt-btn" data-fmt="h3" title="Heading 3 (H3)">H3</button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-fmt="bold" title="Bold (Cmd/Ctrl+B)"><b>B</b></button>
+          <button type="button" class="fmt-btn" data-fmt="italic" title="Italic (Cmd/Ctrl+I)"><i>I</i></button>
+          <button type="button" class="fmt-btn" data-fmt="strike" title="Strikethrough"><s>S</s></button>
+          <button type="button" class="fmt-btn" data-fmt="code" title="Inline code"><code>&lt;&gt;</code></button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-fmt="task" title="To-do checkbox">☑</button>
+          <button type="button" class="fmt-btn" data-fmt="bullet" title="Bullet list">•</button>
+          <button type="button" class="fmt-btn" data-fmt="number" title="Numbered list">1.</button>
+          <button type="button" class="fmt-btn" data-fmt="quote" title="Quote">”</button>
+          <span class="fmt-sep"></span>
+          <button type="button" class="fmt-btn" data-fmt="wikilink" title="Wiki Link [[...]]">[[ ]]</button>
+          <button type="button" class="fmt-btn" data-fmt="link" title="Link [text](url)">🔗</button>
+        </div>
         <div class="editor-host" id="editor-host"></div>
       </main>
     </div>
+
+    <!-- Settings & Vault Modal -->
+    <div class="modal-backdrop" id="settings-modal" style="display:none" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="modal">
+        <div class="modal-header">
+          <h2 id="settings-title" style="margin:0;font-size:18px;">⚙ Settings & Vault</h2>
+          <button type="button" class="btn icon" id="btn-close-settings" aria-label="Close settings">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="settings-section">
+            <h3>📁 Local Folder Sync (Obsidian Vault)</h3>
+            <p class="settings-desc">Save your notes as real <code>.md</code> files directly to any folder on your computer.</p>
+            <div class="vault-sync-box">
+              <div class="vault-status" id="vault-status">No local folder connected</div>
+              <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                <button type="button" class="btn primary" id="btn-pick-vault">Choose Notes Folder…</button>
+                <button type="button" class="btn" id="btn-sync-vault-now" style="display:none">Sync All Notes Now</button>
+                <button type="button" class="btn danger" id="btn-disconnect-vault" style="display:none">Disconnect</button>
+              </div>
+              <label class="checkbox-row" id="auto-sync-row" style="display:none;margin-top:10px;">
+                <input type="checkbox" id="chk-auto-sync" checked />
+                <span>Auto-save notes to folder whenever modified</span>
+              </label>
+            </div>
+            <div class="vault-fallback">
+              <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">Universal Vault Backup (all browsers):</div>
+              <button type="button" class="btn" id="btn-download-vault-zip">📦 Download Vault as .zip (Obsidian format)</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>🕸️ Note Map (Graph View)</h3>
+            <p class="settings-desc">Interactive visual map of your connected notes and wiki-links.</p>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+              <button type="button" class="btn primary" id="btn-open-map-from-settings">Open Note Map</button>
+              <label class="checkbox-row">
+                <input type="checkbox" id="chk-show-map-btn" checked />
+                <span>Show Note Map button in sidebar</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>◐ Theme</h3>
+            <div style="display:flex;gap:8px;">
+              <button type="button" class="btn" id="btn-theme-light">Light</button>
+              <button type="button" class="btn" id="btn-theme-dark">Dark</button>
+              <button type="button" class="btn" id="btn-theme-system">System</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>💾 Backup & Data</h3>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="btn" id="btn-settings-export-json">Export JSON Backup</button>
+              <button type="button" class="btn" id="btn-settings-import">Import Notes (.md / .json)</button>
+            </div>
+            <div class="storage-info" id="storage-info" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Note Map (Graph View) Fullscreen Overlay -->
+    <section class="graph-overlay" id="graph-overlay" style="display:none" aria-label="Note Map">
+      <div class="graph-header">
+        <div class="graph-title-group">
+          <strong>🐾 Note Map</strong>
+          <span class="graph-meta" id="graph-meta">0 notes · 0 links</span>
+        </div>
+        <input type="search" class="search graph-search" id="graph-search" placeholder="Filter notes in map…" aria-label="Filter notes in graph map" autocomplete="off" />
+        <button type="button" class="btn" id="btn-close-graph">✕ Close Map</button>
+      </div>
+      <div class="graph-canvas-container" id="graph-canvas-container"></div>
+    </section>
+
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

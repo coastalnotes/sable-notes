@@ -109,11 +109,180 @@ export const bearTheme = EditorView.theme({
   },
 });
 
+export type FormatAction =
+  | "bold"
+  | "italic"
+  | "strike"
+  | "code"
+  | "h1"
+  | "h2"
+  | "h3"
+  | "task"
+  | "bullet"
+  | "number"
+  | "quote"
+  | "wikilink"
+  | "link";
+
+export function applyFormat(view: EditorView, action: FormatAction): void {
+  const { state } = view;
+  const { from, to } = state.selection.main;
+  const selectedText = state.sliceDoc(from, to);
+
+  if (action === "bold") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `**${selectedText}**` },
+        selection: { anchor: from + 2, head: to + 2 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "****" },
+        selection: { anchor: from + 2 },
+      });
+    }
+  } else if (action === "italic") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `*${selectedText}*` },
+        selection: { anchor: from + 1, head: to + 1 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "**" },
+        selection: { anchor: from + 1 },
+      });
+    }
+  } else if (action === "strike") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `~~${selectedText}~~` },
+        selection: { anchor: from + 2, head: to + 2 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "~~~~" },
+        selection: { anchor: from + 2 },
+      });
+    }
+  } else if (action === "code") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `\`${selectedText}\`` },
+        selection: { anchor: from + 1, head: to + 1 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "``" },
+        selection: { anchor: from + 1 },
+      });
+    }
+  } else if (action === "wikilink") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `[[${selectedText}]]` },
+        selection: { anchor: from + 2, head: to + 2 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "[[Note title]]" },
+        selection: { anchor: from + 2, head: from + 12 },
+      });
+    }
+  } else if (action === "link") {
+    if (from !== to) {
+      view.dispatch({
+        changes: { from, to, insert: `[${selectedText}](https://)` },
+        selection: { anchor: to + 3, head: to + 11 },
+      });
+    } else {
+      view.dispatch({
+        changes: { from, insert: "[title](https://)" },
+        selection: { anchor: from + 1, head: from + 6 },
+      });
+    }
+  } else if (action === "h1" || action === "h2" || action === "h3") {
+    const prefix = action === "h1" ? "# " : action === "h2" ? "## " : "### ";
+    const line = state.doc.lineAt(from);
+    const lineText = line.text;
+    const existingHeading = lineText.match(/^(#{1,6}\s+)/);
+    if (existingHeading) {
+      if (existingHeading[1] === prefix) {
+        view.dispatch({
+          changes: { from: line.from, to: line.from + existingHeading[1].length, insert: "" },
+        });
+      } else {
+        view.dispatch({
+          changes: { from: line.from, to: line.from + existingHeading[1].length, insert: prefix },
+        });
+      }
+    } else {
+      view.dispatch({
+        changes: { from: line.from, insert: prefix },
+      });
+    }
+  } else if (action === "task") {
+    const line = state.doc.lineAt(from);
+    const lineText = line.text;
+    const match = lineText.match(/^(\s*)-\s+\[[ x]\]\s+/i);
+    if (match) {
+      view.dispatch({
+        changes: { from: line.from, to: line.from + match[0].length, insert: match[1] },
+      });
+    } else {
+      view.dispatch({
+        changes: { from: line.from, insert: "- [ ] " },
+      });
+    }
+  } else if (action === "bullet") {
+    const line = state.doc.lineAt(from);
+    const lineText = line.text;
+    const match = lineText.match(/^(\s*)-\s+/);
+    if (match) {
+      view.dispatch({
+        changes: { from: line.from, to: line.from + match[0].length, insert: match[1] },
+      });
+    } else {
+      view.dispatch({
+        changes: { from: line.from, insert: "- " },
+      });
+    }
+  } else if (action === "number") {
+    const line = state.doc.lineAt(from);
+    const lineText = line.text;
+    const match = lineText.match(/^(\s*)\d+\.\s+/);
+    if (match) {
+      view.dispatch({
+        changes: { from: line.from, to: line.from + match[0].length, insert: match[1] },
+      });
+    } else {
+      view.dispatch({
+        changes: { from: line.from, insert: "1. " },
+      });
+    }
+  } else if (action === "quote") {
+    const line = state.doc.lineAt(from);
+    const lineText = line.text;
+    const match = lineText.match(/^(\s*)>\s+/);
+    if (match) {
+      view.dispatch({
+        changes: { from: line.from, to: line.from + match[0].length, insert: match[1] },
+      });
+    } else {
+      view.dispatch({
+        changes: { from: line.from, insert: "> " },
+      });
+    }
+  }
+
+  view.focus();
+}
+
 export function createBearEditor(
   parent: HTMLElement,
   initialDoc: string,
   cb: EditorCallbacks,
-): { view: EditorView; setDoc(doc: string): void; destroy(): void } {
+): { view: EditorView; setDoc(doc: string): void; format(action: FormatAction): void; destroy(): void } {
   const extensions: Extension[] = [
     history(),
     markdown(),
@@ -167,8 +336,13 @@ export function createBearEditor(
         changes: { from: 0, to: cur.length, insert: doc },
       });
     },
+    format(action: FormatAction) {
+      applyFormat(view, action);
+    },
     destroy() {
       view.destroy();
     },
   };
 }
+
+export const createSableEditor = createBearEditor;

@@ -1,11 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "Bear Markdown Notes",
+  "name": "Sable Notes",
   "version": "0.1.0",
-  "description": "Bear-style local-first Markdown notes with Obsidian-compatible [[wiki-links]] and #tags.",
+  "description": "Sable Notes: Sleek, local-first Markdown notes with Obsidian-compatible [[wiki-links]], #tags, and folder sync.",
   "browser_specific_settings": {
     "gecko": {
-      "id": "bear-markdown-notes@example.com",
+      "id": "sable-markdown-notes@example.com",
       "strict_min_version": "121.0"
     }
   },
@@ -24,7 +24,7 @@
     "type": "module"
   },
   "sidebar_action": {
-    "default_title": "Bear Notes",
+    "default_title": "Sable Notes",
     "default_panel": "sidepanel/sidepanel.html",
     "default_icon": {
       "16": "icons/icon16.png",

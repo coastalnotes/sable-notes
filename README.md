@@ -1,6 +1,6 @@
-# 🐻 Bear Markdown Notes (Chrome & Firefox)
+# 🐾 Sable Notes (Chrome & Firefox)
 
-Bear-style, local-first Markdown notes as a cross-browser extension. Obsidian-compatible: `#tags`, `[[wiki-links]]`, raw `.md` export.
+Sleek, local-first Markdown notes as a cross-browser extension. Obsidian-compatible: `#tags`, `[[wiki-links]]`, formatting taskbar, interactive Note Map, local directory sync, and raw `.md` / ZIP export.
 
 Status, decisions, and the remaining manual checklist: **[NOTES.md](NOTES.md)**.
 
@@ -8,8 +8,10 @@ Status, decisions, and the remaining manual checklist: **[NOTES.md](NOTES.md)**.
 
 - Manifest V3 (Chrome) + WebExtensions MV3 (Firefox) from one codebase
 - Vanilla TypeScript + Vite (zero framework bloat)
-- CodeMirror 6 editor with hidden-markdown styling (Bear-style)
-- IndexedDB via Dexie.js (`BearNotesDB`), live cross-page updates via `BroadcastChannel`
+- CodeMirror 6 editor with hidden-markdown styling & one-click formatting taskbar
+- IndexedDB via Dexie.js (`SableNotesDB`), live cross-page updates via `BroadcastChannel`
+- Interactive HTML5 Canvas Note Map (Obsidian-style graph view)
+- File System Access API for local folder sync (Obsidian vaults) + universal Vault ZIP export
 
 ## Project structure
 
@@ -17,14 +19,16 @@ Status, decisions, and the remaining manual checklist: **[NOTES.md](NOTES.md)**.
 src/
   manifest.chrome.json / manifest.firefox.json
   background.ts            # service worker: commands, context menus, side panel, tab reuse
-  styles.css               # Bear theme (light/dark via [data-theme])
+  styles.css               # Sable theme (light/dark via [data-theme])
   lib/
     types.ts               # Note, AppSettings
     storage.ts             # Dexie CRUD + search + tags + settings + live query
     extension.ts           # chrome.*/browser.* normalization, storage helpers, app URL
+    filesystem.ts          # File System Access API + vault directory sync + zip export
+    graph.ts               # Interactive canvas Note Map (force-directed graph)
     markdown.ts            # #tag parsing, [[wiki-link]] parsing, titles, tag tree
     export.ts              # .md export, JSON backup, import parsers
-    editor.ts / editor.css # CodeMirror setup, hidden marks, wiki-links
+    editor.ts / editor.css # CodeMirror setup, hidden marks, wiki-links, formatting
     theme.ts               # light/dark/system
     *.test.ts              # Vitest unit tests
   app/                     # full-tab app (index.html, main.ts, app.ts)

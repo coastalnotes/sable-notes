@@ -1,18 +1,18 @@
-# Privacy Policy — Bear Markdown Notes
+# Privacy Policy — Sable Notes
 
 Last updated: 2026-10-27
 
-Bear Markdown Notes is a local-first note-taking extension. **Your notes never
+Sable Notes is a local-first note-taking extension. **Your notes never
 leave your device.**
 
 ## What the extension stores
 
-- **Notes** are stored in your browser's IndexedDB database (`BearNotesDB`) on
-  this device.
+- **Notes** are stored in your browser's IndexedDB database (`SableNotesDB`) on
+  this device, with optional local file sync if you choose a local folder.
 - **Preferences** (theme, last open note, selected tag, the id of the app tab)
   are stored in the browser's extension storage (`storage.local`).
 - **A pending capture** is stored briefly in `storage.local` when you use the
-  "Capture selection to Bear Notes" context menu, and is deleted as soon as the
+  "Capture selection to Sable Notes" context menu, and is deleted as soon as the
   popup or side panel reads it.
 
 ## What the extension does not do

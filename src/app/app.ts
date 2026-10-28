@@ -1,6 +1,17 @@
-import type { createBearEditor } from "../lib/editor";
+import type { createBearEditor, FormatAction } from "../lib/editor";
 import { exportBackupJson, exportNoteMarkdown, parseBackupJson, parseImportedMarkdown } from "../lib/export";
 import { ext } from "../lib/extension";
+import {
+  clearDirectoryHandle,
+  downloadVaultZip,
+  getSavedDirectoryHandle,
+  isFileSystemAccessSupported,
+  pickVaultDirectory,
+  syncAllNotesToDirectory,
+  verifyDirectoryPermission,
+  writeNoteToDirectory,
+} from "../lib/filesystem";
+import { NoteGraphCanvas } from "../lib/graph";
 import { buildTagTree, extractTags, extractTitle, type TagNode } from "../lib/markdown";
 import {
   bulkPutNotes,
@@ -58,6 +69,11 @@ export class App {
   private renderToken = 0;
   private editorModule: Promise<typeof import("../lib/editor")> | null = null;
 
+  private vaultHandle: FileSystemDirectoryHandle | null = null;
+  private autoSyncFolder = true;
+  private showNoteMapInHeader = true;
+  private graphCanvas: NoteGraphCanvas | null = null;
+
   constructor(
     private root: HTMLElement,
     private tagList: HTMLElement,
@@ -74,9 +90,14 @@ export class App {
     this.theme = settings.theme;
     this.selectedTag = settings.selectedTag ?? null;
     this.activeId = settings.lastOpenNoteId ?? null;
+    this.autoSyncFolder = settings.autoSyncFolder ?? true;
+    this.showNoteMapInHeader = settings.showNoteMapInHeader ?? true;
+
     applyTheme(this.theme);
-    // The app lives for the page lifetime; no teardown needed.
     watchSystemTheme(() => this.theme);
+
+    await this.initVault();
+    this.updateMapButtonVisibility();
 
     // Deep links from the side panel / notifications: app/index.html#<noteId>
     await this.applyHashLink(true);
@@ -156,6 +177,103 @@ export class App {
     this.suppressLiveUntil = Date.now() + 800;
   }
 
+  private updateMapButtonVisibility(): void {
+    const btnMap = document.getElementById("btn-map");
+    if (btnMap) {
+      btnMap.style.display = this.showNoteMapInHeader ? "" : "none";
+    }
+  }
+
+  private async initVault(): Promise<void> {
+    if (!isFileSystemAccessSupported) return;
+    try {
+      const handle = await getSavedDirectoryHandle();
+      if (handle) {
+        const hasPermission = await verifyDirectoryPermission(handle, true);
+        if (hasPermission) {
+          this.vaultHandle = handle;
+          this.updateVaultUI();
+        }
+      }
+    } catch (e) {
+      console.warn("Vault initialization notice:", e);
+    }
+  }
+
+  private updateVaultUI(): void {
+    const statusEl = document.getElementById("vault-status");
+    const syncNowBtn = document.getElementById("btn-sync-vault-now");
+    const disconnectBtn = document.getElementById("btn-disconnect-vault");
+    const autoSyncRow = document.getElementById("auto-sync-row");
+    const autoSyncChk = document.getElementById("chk-auto-sync") as HTMLInputElement | null;
+
+    if (this.vaultHandle) {
+      if (statusEl) {
+        statusEl.className = "vault-status active";
+        statusEl.textContent = `✓ Connected folder: "${this.vaultHandle.name}"`;
+      }
+      if (syncNowBtn) syncNowBtn.style.display = "";
+      if (disconnectBtn) disconnectBtn.style.display = "";
+      if (autoSyncRow) autoSyncRow.style.display = "";
+      if (autoSyncChk) autoSyncChk.checked = this.autoSyncFolder;
+    } else {
+      if (statusEl) {
+        statusEl.className = "vault-status";
+        statusEl.textContent = isFileSystemAccessSupported
+          ? "No local folder connected."
+          : "Local Folder Sync requires Chromium (Chrome/Edge/Brave). Use the zip backup below on Firefox.";
+      }
+      if (syncNowBtn) syncNowBtn.style.display = "none";
+      if (disconnectBtn) disconnectBtn.style.display = "none";
+      if (autoSyncRow) autoSyncRow.style.display = "none";
+    }
+  }
+
+  private async pickVault(): Promise<void> {
+    try {
+      const handle = await pickVaultDirectory();
+      if (handle) {
+        this.vaultHandle = handle;
+        this.updateVaultUI();
+        // Sync existing notes to newly connected folder
+        const { count } = await syncAllNotesToDirectory(handle, this.notes);
+        this.setStatus(`Synced ${count} notes to ${handle.name}`);
+      }
+    } catch (e: any) {
+      if (e?.name !== "AbortError") {
+        console.warn("Folder selection cancelled or failed:", e);
+      }
+    }
+  }
+
+  private async syncAllVault(): Promise<void> {
+    if (!this.vaultHandle) return;
+    this.setStatus("Syncing vault…");
+    try {
+      const { count } = await syncAllNotesToDirectory(this.vaultHandle, this.notes);
+      this.setStatus(`Synced ${count} notes to "${this.vaultHandle.name}" ✓`);
+    } catch (e) {
+      console.warn("Sync failed:", e);
+      this.setStatus("Sync failed — re-select folder");
+    }
+  }
+
+  private async disconnectVault(): Promise<void> {
+    await clearDirectoryHandle();
+    this.vaultHandle = null;
+    this.updateVaultUI();
+    this.setStatus("Disconnected local folder");
+  }
+
+  private async syncNoteToVault(note: Note): Promise<void> {
+    if (!this.vaultHandle || !this.autoSyncFolder) return;
+    try {
+      await writeNoteToDirectory(this.vaultHandle, note);
+    } catch (e) {
+      console.warn("Auto-sync to vault failed:", e);
+    }
+  }
+
   private bindUI(): void {
     document.getElementById("btn-new")?.addEventListener("click", () => void this.newNote());
     document.getElementById("btn-delete")?.addEventListener("click", () => void this.deleteActive());
@@ -166,8 +284,68 @@ export class App {
       .getElementById("btn-back")
       ?.addEventListener("click", () => this.root.classList.add("show-list"));
 
+    // Settings Modal
+    document.getElementById("btn-settings")?.addEventListener("click", () => this.openSettings());
+    document.getElementById("btn-close-settings")?.addEventListener("click", () => this.closeSettings());
+    document.getElementById("settings-modal")?.addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) this.closeSettings();
+    });
+    document.getElementById("btn-pick-vault")?.addEventListener("click", () => void this.pickVault());
+    document.getElementById("btn-sync-vault-now")?.addEventListener("click", () => void this.syncAllVault());
+    document
+      .getElementById("btn-disconnect-vault")
+      ?.addEventListener("click", () => void this.disconnectVault());
+    document
+      .getElementById("btn-download-vault-zip")
+      ?.addEventListener("click", () => downloadVaultZip(this.notes));
+    document
+      .getElementById("btn-settings-export-json")
+      ?.addEventListener("click", () => void this.exportAll());
+
+    const autoSyncChk = document.getElementById("chk-auto-sync") as HTMLInputElement | null;
+    autoSyncChk?.addEventListener("change", () => {
+      this.autoSyncFolder = autoSyncChk.checked;
+      void saveSettings({ autoSyncFolder: this.autoSyncFolder });
+    });
+
+    const showMapChk = document.getElementById("chk-show-map-btn") as HTMLInputElement | null;
+    if (showMapChk) showMapChk.checked = this.showNoteMapInHeader;
+    showMapChk?.addEventListener("change", () => {
+      this.showNoteMapInHeader = showMapChk.checked;
+      this.updateMapButtonVisibility();
+      void saveSettings({ showNoteMapInHeader: this.showNoteMapInHeader });
+    });
+
+    document.getElementById("btn-theme-light")?.addEventListener("click", () => void this.setTheme("light"));
+    document.getElementById("btn-theme-dark")?.addEventListener("click", () => void this.setTheme("dark"));
+    document
+      .getElementById("btn-theme-system")
+      ?.addEventListener("click", () => void this.setTheme("system"));
+    document.getElementById("btn-open-map-from-settings")?.addEventListener("click", () => {
+      this.closeSettings();
+      this.openGraphView();
+    });
+
+    // Note Map (Graph View)
+    document.getElementById("btn-map")?.addEventListener("click", () => this.openGraphView());
+    document.getElementById("btn-close-graph")?.addEventListener("click", () => this.closeGraphView());
+    document.getElementById("graph-search")?.addEventListener("input", (e) => {
+      this.graphCanvas?.setFilter((e.target as HTMLInputElement).value);
+    });
+
+    // Formatting Toolbar
+    document.querySelectorAll<HTMLButtonElement>("#editor-toolbar .fmt-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const fmt = btn.dataset.fmt as FormatAction | undefined;
+        if (fmt && this.editor) {
+          this.editor.format(fmt);
+        }
+      });
+    });
+
     const fileInput = document.getElementById("file-import") as HTMLInputElement | null;
     document.getElementById("btn-import")?.addEventListener("click", () => fileInput?.click());
+    document.getElementById("btn-settings-import")?.addEventListener("click", () => fileInput?.click());
     fileInput?.addEventListener("change", () => {
       if (fileInput.files) void this.importFiles(fileInput.files);
       fileInput.value = "";
@@ -185,8 +363,87 @@ export class App {
       if (mod && e.key.toLowerCase() === "n") {
         e.preventDefault();
         void this.newNote();
+      } else if (mod && e.key.toLowerCase() === "b") {
+        if (this.editor && document.activeElement && this.editorHost.contains(document.activeElement)) {
+          e.preventDefault();
+          this.editor.format("bold");
+        }
+      } else if (mod && e.key.toLowerCase() === "i") {
+        if (this.editor && document.activeElement && this.editorHost.contains(document.activeElement)) {
+          e.preventDefault();
+          this.editor.format("italic");
+        }
+      } else if (e.key === "Escape") {
+        this.closeSettings();
+        this.closeGraphView();
       }
     });
+  }
+
+  private openSettings(): void {
+    const modal = document.getElementById("settings-modal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    this.updateVaultUI();
+    const storageInfo = document.getElementById("storage-info");
+    if (storageInfo) {
+      storageInfo.textContent = `${this.notes.length} notes in library.`;
+    }
+  }
+
+  private closeSettings(): void {
+    const modal = document.getElementById("settings-modal");
+    if (modal) modal.style.display = "none";
+  }
+
+  private openGraphView(): void {
+    const overlay = document.getElementById("graph-overlay");
+    const container = document.getElementById("graph-canvas-container");
+    if (!overlay || !container) return;
+
+    overlay.style.display = "flex";
+    if (!this.graphCanvas) {
+      this.graphCanvas = new NoteGraphCanvas(container, {
+        onSelectNote: (noteId) => {
+          this.closeGraphView();
+          void (async () => {
+            this.activeId = noteId;
+            await saveSettings({ lastOpenNoteId: noteId });
+            await this.refreshNotes(true, noteId);
+          })();
+        },
+      });
+    }
+
+    this.graphCanvas.setNotes(this.notes);
+
+    const searchInput = document.getElementById("graph-search") as HTMLInputElement | null;
+    if (searchInput) {
+      searchInput.value = "";
+      this.graphCanvas.setFilter("");
+    }
+
+    const meta = document.getElementById("graph-meta");
+    if (meta) {
+      let linkCount = 0;
+      for (const n of this.notes) {
+        const matches = n.body.match(/\[\[[^\][|]+(?:\|[^\]]+)?\]\]/g);
+        if (matches) linkCount += matches.length;
+      }
+      meta.textContent = `${this.notes.length} notes · ${linkCount} connections`;
+    }
+  }
+
+  private closeGraphView(): void {
+    const overlay = document.getElementById("graph-overlay");
+    if (overlay) overlay.style.display = "none";
+  }
+
+  private async setTheme(theme: ThemePref): Promise<void> {
+    this.theme = theme;
+    applyTheme(theme);
+    await saveSettings({ theme });
+    this.setStatus(`Theme: ${theme}`);
   }
 
   private async newNote(): Promise<void> {
@@ -221,9 +478,7 @@ export class App {
 
   private async cycleTheme(): Promise<void> {
     this.theme = this.theme === "light" ? "dark" : this.theme === "dark" ? "system" : "light";
-    applyTheme(this.theme);
-    await saveSettings({ theme: this.theme });
-    this.setStatus(`Theme: ${this.theme}`);
+    await this.setTheme(this.theme);
   }
 
   private async importFiles(files: FileList): Promise<void> {
@@ -249,30 +504,28 @@ export class App {
         console.warn("Import failed for", f.name, e);
       }
     }
-    if (imported.length === 0) {
-      this.setStatus("Nothing imported");
-      return;
+    if (imported.length > 0) {
+      this.beginLocalWrite();
+      await bulkPutNotes(imported);
+      await this.refreshNotes(true, imported[0]?.id);
+      this.setStatus(`Imported ${imported.length} note(s)`);
     }
-    this.beginLocalWrite();
-    await bulkPutNotes(imported);
-    this.setStatus(`Imported ${imported.length} note${imported.length === 1 ? "" : "s"}`);
-    await this.refreshNotes(true, imported[0].id);
   }
 
   private async refreshNotes(rebuildEditor: boolean, forceActiveId?: string): Promise<void> {
-    let notes: Note[];
-    if (this.query.trim()) {
-      notes = await searchNotes(this.query);
+    if (this.query) {
+      this.notes = await searchNotes(this.query);
     } else if (this.selectedTag) {
-      notes = await notesWithTag(this.selectedTag);
+      this.notes = await notesWithTag(this.selectedTag);
     } else {
-      notes = await listNotes();
+      this.notes = await listNotes();
     }
-    this.notes = notes;
 
     if (forceActiveId) this.activeId = forceActiveId;
-    if (!notes.some((n) => n.id === this.activeId)) {
-      this.activeId = notes[0]?.id ?? null;
+    else if (this.activeId && !this.notes.some((n) => n.id === this.activeId)) {
+      this.activeId = this.notes[0]?.id ?? null;
+    } else if (!this.activeId && this.notes.length > 0) {
+      this.activeId = this.notes[0].id;
     }
 
     this.renderTags();
@@ -284,17 +537,22 @@ export class App {
     void listAllTags().then((tags) => {
       const tree = buildTagTree(tags);
       const html: string[] = [];
+      const allActive = this.selectedTag === null ? " active" : "";
       html.push(
-        `<button class="tag-row ${this.selectedTag === null ? "active" : ""}" data-tag="">` +
-          `<span>📝</span><span>All notes</span></button>`,
+        `<button class="tag-row${allActive}" data-tag="">` +
+          `<span class="hash">#</span><span>All Notes</span>` +
+          `<span class="count">${this.notes.length}</span>` +
+          `</button>`,
       );
+
       const render = (nodes: TagNode[], depth: number) => {
         for (const n of nodes) {
           const active = this.selectedTag === n.full ? " active" : "";
           html.push(
-            `<button class="tag-row${active}" data-tag="${esc(n.full)}" style="padding-left:${8 + depth * 10}px">` +
+            `<button class="tag-row${active}" data-tag="${esc(n.full)}">` +
               `<span class="hash">#</span><span>${esc(n.segment)}</span>` +
-              `<span class="count">${n.count}</span></button>`,
+              `<span class="count">${n.count}</span>` +
+              `</button>`,
           );
           if (n.children.length > 0) {
             html.push(`<div class="tag-children">`);
@@ -370,8 +628,6 @@ export class App {
     if (document.activeElement !== this.titleInput) this.titleInput.value = note.title;
 
     if (rebuildEditor || !this.editor) {
-      // CodeMirror is lazy-loaded so the notes list paints before the editor
-      // bundle arrives. Bail out if another render superseded this one.
       const { createBearEditor } = await this.loadEditorModule();
       if (token !== this.renderToken) return;
       this.editorHost.innerHTML = "";
@@ -387,7 +643,6 @@ export class App {
       });
       this.suppressEditorChange = false;
     } else {
-      // Don't clobber in-flight typing when another surface nudges the list.
       const focused = this.editorHost.contains(document.activeElement);
       const current = this.editor.view.state.doc.toString();
       if (!(focused && current !== note.body)) {
@@ -409,7 +664,6 @@ export class App {
       void (async () => {
         const titleFromBody = extractTitle(doc);
         const currentTitle = this.titleInput.value.trim();
-        // Auto-adopt first heading when the title box is still "Untitled"/empty.
         const nextTitle =
           (!currentTitle || currentTitle === "Untitled") && titleFromBody ? titleFromBody : currentTitle;
         this.beginLocalWrite();
@@ -421,9 +675,9 @@ export class App {
             this.titleInput.value = updated.title;
           }
           this.setStatus(`Saved ${fmtDate(updated.updatedAt)}`);
-          // Refresh tags + list order without rebuilding the editor.
           this.renderTags();
           this.renderList();
+          void this.syncNoteToVault(updated);
         }
       })();
     }, 450);
@@ -445,6 +699,7 @@ export class App {
           if (i >= 0) this.notes[i] = updated;
           this.setStatus(`Saved ${fmtDate(updated.updatedAt)}`);
           this.renderList();
+          void this.syncNoteToVault(updated);
         }
       })();
     }, 450);

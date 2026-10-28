@@ -18,4 +18,6 @@ export interface AppSettings {
   theme: ThemePref;
   lastOpenNoteId?: string;
   selectedTag?: string | null;
+  autoSyncFolder?: boolean;
+  showNoteMapInHeader?: boolean;
 }
