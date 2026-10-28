@@ -38,6 +38,8 @@ Obsidian vault. All notes can also be exported as a standard Vault `.zip` on any
 - [x] Formatting taskbar (H1, H2, H3, Bold, Italic, Strikethrough, Code, Task, Bullet, Number, Quote, Wiki-link, Link)
 - [x] Settings modal (Local Folder Sync + Vault ZIP export + Note Map options + Themes)
 - [x] Interactive Note Map (Graph view with physics simulation, zoom/pan, search filter, click-to-open)
+- [x] Backed up to GitHub: `https://github.com/coastalnotes/sable-notes` (CI passing)
+- [x] Firefox implementation paused per user instruction (focusing on Chrome Web Store)
 
 ### Not verified (needs a real extension install)
 
